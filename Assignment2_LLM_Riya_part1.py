@@ -21,11 +21,18 @@ def fetch_sp500_tickers():
     table = soup.find('table', {'id': 'constituents'})
     return [row.find_all('td')[0].text.strip() for row in table.find_all('tr')[1:]]
 
-# use the given company_tickers file to get the CIK mapping
+# use the given company_tickers endpoint to get the CIK mapping
 def get_cik_mapping():
-    with open("company_tickers.json", "r") as f:
-        cik_data = json.load(f)
-    return {item["ticker"].upper(): str(item["cik_str"]).zfill(10) for item in cik_data.values()}
+    # using the provided url to get the company tickers
+    url = "https://www.sec.gov/files/company_tickers.json"
+    try:
+        response = requests.get(url, headers=HEADERS)
+        response.raise_for_status()
+        cik_data = response.json()
+        return {item["ticker"].upper(): str(item["cik_str"]).zfill(10) for item in cik_data.values()}
+    except requests.exceptions.RequestException as e:
+        print(f"Error fetching CIK data: {e}")
+        return {}
 
 # for each CIK get the last 20 filings
 def get_8k_filings(cik, count=20):
